@@ -1,8 +1,15 @@
 [![npm version](https://badge.fury.io/js/dynamodb-geo.svg)](https://badge.fury.io/js/dynamodb-geo) ![Github Action](https://github.com/HoneydewTech/dynamodb-geo.js/actions/workflows/main.yaml/badge.svg)
 
-# Geo Library for Amazon DynamoDB
+# Geo Library for Amazon DynamoDB DocumentClient
 
-This project is an unofficial port of [awslabs/dynamodb-geo][dynamodb-geo], bringing creation and querying of geospatial data to Node JS developers using [Amazon DynamoDB][dynamodb].
+This project is forked from rh389/dynamodb-geo.js to support DynamoDB.DocumentClient() API. rh389/dynamodb-geo.js is an unofficial port of [awslabs/dynamodb-geo][dynamodb-geo], bringing creation and querying of geospatial data to Node JS developers using [Amazon DynamoDB][dynamodb] [dynamodbdocumentclient].
+
+# Key Differences from rh389/dynamodb-geo.js
+
+- Use DynamoDB.DocumentClient() formatted inputs/outputs, makes it compatible with DAX api.
+- There is a slight loss of resolution to the geohash, since DocumentClient does not support the long numbers, and is limited by javascript's built-in number precision.
+- For the point {-0.13, 51.51}, dynamodb-geo will generate a geohash of 5221366118452580119, and this library will generate 5221366118452580000 (notice rounding of last 4 digits).
+- 1ft resolution requires hashkey of 14 digits, even with rounding, we still have 15 digits preserved, this may be okay if you can live with 1 feet resolution (originnal library was able to do 1 cm resolution, I think).
 
 ## Features
 
@@ -15,7 +22,7 @@ This project is an unofficial port of [awslabs/dynamodb-geo][dynamodb-geo], brin
 ## Installation
 
 Using [npm] or [yarn]:
-`npm install --save dynamodb-geo` or `yarn add dynamodb-geo`.
+`npm install --save dynamodb-documentclient-geo` or `yarn add dynamodb-documentclient-geo`.
 
 ## Getting started
 
@@ -23,16 +30,29 @@ First you'll need to import the AWS sdk and set up your DynamoDB connection:
 
 ```js
 const AWS = require("aws-sdk");
+const ddbDocClient = new AWS.DynamoDB.DocumentClient({
+  endpoint: new AWS.Endpoint("http://localhost:8000"),
+}); // Local development
+```
+
+Alternatively, to get DocumentClient from an existing instance of DynamoDB you can do this:
+
+```js
+const AWS = require("aws-sdk");
 const ddb = new AWS.DynamoDB({
   endpoint: new AWS.Endpoint("http://localhost:8000"),
 }); // Local development
+const ddbDocClient = new AWS.DynamoDB.DocumentClient({ service: ddb });
 ```
 
 Next you must create an instance of `GeoDataManagerConfiguration` for each geospatial table you wish to interact with. This is a container for various options (see API below), but you must always provide a `DynamoDB` instance and a table name.
 
 ```js
-const ddbGeo = require("dynamodb-geo");
-const config = new ddbGeo.GeoDataManagerConfiguration(ddb, "MyGeoTable");
+const ddbGeo = require("dynamodb-documentclient-geo");
+const config = new ddbGeo.GeoDataManagerConfiguration(
+  ddbDocClient,
+  "MyGeoTable"
+);
 ```
 
 You may modify the config to change defaults.
@@ -104,7 +124,7 @@ ddb
 ```js
 myGeoTableManager
   .putPoint({
-    RangeKeyValue: { S: "1234" }, // Use this to ensure uniqueness of the hash/range pairs.
+    RangeKeyValue: "1234", // Use this to ensure uniqueness of the hash/range pairs.
     GeoPoint: {
       // An object specifying latitutde and longitude as plain numbers. Used to build the geohash, the hashkey and geojson data
       latitude: 51.51,
@@ -114,8 +134,8 @@ myGeoTableManager
       // Passed through to the underlying DynamoDB.putItem request. TableName is filled in for you.
       Item: {
         // The primary key, geohash and geojson data is filled in for you
-        country: { S: "UK" }, // Specify attribute values using { type: value } objects, like the DynamoDB API.
-        capital: { S: "London" },
+        country: "UK", // Specify attribute values directly, like the DynamoDB DocumentClient API.
+        capital: "London",
       },
       // ... Anything else to pass through to `putItem`, eg ConditionExpression
     },
@@ -126,18 +146,18 @@ myGeoTableManager
   });
 ```
 
-See also [DynamoDB PutItem request][putitem]
+See also [DynamoDB PutItem request][put]
 
 ## Updating a specific point
 
 Note that you cannot update the hash key, range key, geohash or geoJson. If you want to change these, you'll need to recreate the record.
 
-You must specify a `RangeKeyValue`, a `GeoPoint`, and an `UpdateItemInput` matching the [DynamoDB UpdateItem][updateitem] request (`TableName` and `Key` are filled in for you).
+You must specify a `RangeKeyValue`, a `GeoPoint`, and an `UpdateItemInput` matching the [DynamoDB DocumentClient Update][update] request (`TableName` and `Key` are filled in for you).
 
 ```js
 myGeoTableManager
   .updatePoint({
-    RangeKeyValue: { S: "1234" },
+    RangeKeyValue: "1234",
     GeoPoint: {
       // An object specifying latitutde and longitude as plain numbers.
       latitude: 51.51,
@@ -147,7 +167,7 @@ myGeoTableManager
       // TableName and Key are filled in for you
       UpdateExpression: "SET country = :newName",
       ExpressionAttributeValues: {
-        ":newName": { S: "United Kingdom" },
+        ":newName": "United Kingdom",
       },
     },
   })
@@ -159,12 +179,12 @@ myGeoTableManager
 
 ## Deleting a specific point
 
-You must specify a `RangeKeyValue` and a `GeoPoint`. Optionally, you can pass `DeleteItemInput` matching [DynamoDB DeleteItem][deleteitem] request (`TableName` and `Key` are filled in for you).
+You must specify a `RangeKeyValue` and a `GeoPoint`. Optionally, you can pass `DeleteItemInput` matching [DynamoDB DocumentClient Delete][delete] request (`TableName` and `Key` are filled in for you).
 
 ```js
 myGeoTableManager
   .deletePoint({
-    RangeKeyValue: { S: "1234" },
+    RangeKeyValue: "1234",
     GeoPoint: {
       // An object specifying latitutde and longitude as plain numbers.
       latitude: 51.51,
@@ -307,16 +327,17 @@ The Geohash used in this library is roughly centimeter precision. Therefore, the
 
 [npm]: https://www.npmjs.com
 [yarn]: https://yarnpkg.com
-[updateitem]: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html
-[deleteitem]: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DeleteItem.html
-[putitem]: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_PutItem.html
+[update]: https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#update-property
+[delete]: https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#delete-property
+[put]: https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#put-property
 [createtable]: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_CreateTable.html
 [hashrange]: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html#HowItWorks.CoreComponents.PrimaryKey
 [readconsistency]: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html
 [geojson]: https://geojson.org/geojson-spec.html
-[example]: https://github.com/rh389/dynamodb-geo.js/tree/master/example
+[example]: https://github.com/manosamy/dynamodb-documentclient-geo.js/tree/master/example
 [dynamodb-geo]: https://github.com/awslabs/dynamodb-geo
 [dynamodb]: http://aws.amazon.com/dynamodb
-[dynamodb-query]: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html
-[hashkeylength-tests]: https://github.com/rh389/dynamodb-geo.js/blob/master/test/integration/hashKeyLength.ts
+[dynamodbdocumentclient]: https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html
+[dynamodb-query]: https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html#query-property
+[hashkeylength-tests]: https://github.com/manosamy/dynamodb-documentclient-geo.js/blob/master/test/integration/hashKeyLength.ts
 [choosing-hashkeylength]: #choosing-a-hashkeylength-optimising-for-performance-and-cost
