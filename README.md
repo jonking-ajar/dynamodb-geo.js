@@ -1,4 +1,4 @@
-[![npm version](https://badge.fury.io/js/dynamodb-geo.svg)](https://badge.fury.io/js/dynamodb-geo) ![Github Action](https://github.com/HoneydewTech/dynamodb-geo.js/actions/workflows/main.yaml/badge.svg)
+[![npm version](https://badge.fury.io/js/dynamodb-geo.svg)](https://badge.fury.io/js/dynamodb-geo) [![Github Action](https://github.com/HoneydewTech/dynamodb-geo.js/actions/workflows/main.yaml/badge.svg)](https://github.com/HoneydewTech/dynamodb-geo.js/actions)
 
 # Geo Library for Amazon DynamoDB DocumentClient
 
