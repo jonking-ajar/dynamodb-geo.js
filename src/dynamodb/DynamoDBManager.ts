@@ -213,20 +213,42 @@ export class DynamoDBManager {
       updatePointInput.UpdateItemInput.Key = {};
     }
 
-    updatePointInput.UpdateItemInput.Key[this.config.hashKeyAttributeName] =
-      parseFloat(hashKey.toString(10));
+    updatePointInput.UpdateItemInput.UpdateExpression =
+      "set #hk = :hk, #gh = :hg, #geoJson = :geoJson";
+
+    updatePointInput.UpdateItemInput.ExpressionAttributeNames = {
+      "#hk": this.config.hashKeyAttributeName,
+      "#gh": this.config.geohashAttributeName,
+      "#geoJson": this.config.geoJsonAttributeName,
+    };
+    updatePointInput.UpdateItemInput.ExpressionAttributeValues = {
+      ":hk": parseFloat(hashKey.toString(10)),
+      ":gh": parseFloat(geohash.toString(10)),
+      ":geoJson": JSON.stringify({
+        type: this.config.geoJsonPointType,
+        coordinates: this.config.longitudeFirst
+          ? [
+              updatePointInput.GeoPoint.longitude,
+              updatePointInput.GeoPoint.latitude,
+            ]
+          : [
+              updatePointInput.GeoPoint.latitude,
+              updatePointInput.GeoPoint.longitude,
+            ],
+      }),
+    };
     updatePointInput.UpdateItemInput.Key[this.config.rangeKeyAttributeName] =
       updatePointInput.RangeKeyValue;
 
-    // Geohash and geoJson cannot be updated.
-    if (updatePointInput.UpdateItemInput.AttributeUpdates) {
-      delete updatePointInput.UpdateItemInput.AttributeUpdates[
-        this.config.geohashAttributeName
-      ];
-      delete updatePointInput.UpdateItemInput.AttributeUpdates[
-        this.config.geoJsonAttributeName
-      ];
-    }
+    // // Geohash and geoJson cannot be updated.
+    // if (updatePointInput.UpdateItemInput.AttributeUpdates) {
+    //   delete updatePointInput.UpdateItemInput.AttributeUpdates[
+    //     this.config.geohashAttributeName
+    //   ];
+    //   delete updatePointInput.UpdateItemInput.AttributeUpdates[
+    //     this.config.geoJsonAttributeName
+    //   ];
+    // }
 
     return this.config.documentClient.update(updatePointInput.UpdateItemInput);
   }
