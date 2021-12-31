@@ -30,5 +30,8 @@
   },
   "peerDependencies": {
     "aws-sdk": "^2.176.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/HoneydewTech"
   }
 }
