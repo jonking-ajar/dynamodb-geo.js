@@ -1,6 +1,6 @@
 {
   "name": "@honeydewtech/dynamodb-documentclient-geo",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A javascript port of awslabs/dynamodb-geo, for dynamodb geospatial querying",
   "scripts": {
     "prepublish": "tsc -d",
