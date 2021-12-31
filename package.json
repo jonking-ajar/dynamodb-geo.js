@@ -1,5 +1,5 @@
 {
-  "name": "dynamodb-documentclient-geo",
+  "name": "@honeydewtech/dynamodb-documentclient-geo",
   "version": "0.4.0",
   "description": "A javascript port of awslabs/dynamodb-geo, for dynamodb geospatial querying",
   "scripts": {
@@ -10,8 +10,11 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "repository": "rh389/dynamodb-geo.js",
-  "author": "Rob Hogan <github@rhogan.net>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/honeydewtech/dynamodb-geo.js"
+  },
+  "author": "Saksham Saini <github@ssaini4>",
   "license": "Apache-2.0",
   "dependencies": {
     "@types/decimal.js": "^0.0.30",
@@ -32,6 +35,6 @@
     "aws-sdk": "^2.176.0"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/HoneydewTech"
+    "registry": "https://npm.pkg.github.com/@honeydewtech"
   }
 }
