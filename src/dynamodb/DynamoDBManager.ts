@@ -214,7 +214,7 @@ export class DynamoDBManager {
     }
 
     updatePointInput.UpdateItemInput.UpdateExpression =
-      "set #hk = :hk, #gh = :hg, #geoJson = :geoJson";
+      "set #hk = :hk, #gh = :gh, #geoJson = :geoJson";
 
     updatePointInput.UpdateItemInput.ExpressionAttributeNames = {
       "#hk": this.config.hashKeyAttributeName,
